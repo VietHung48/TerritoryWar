@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial;
-      background-image: url("https://viethung48.github.io/TerritoryWar/Background.png");
+      background-image: url("Background.jpg");
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -84,7 +84,15 @@
     }
 
     #questionText {
+      margin-top: 5px;
+      margin-bottom: 12px;
       text-align: justify;
+      display: flex;
+      flex-wrap: wrap;
+      /* xuống hàng nếu ảnh quá nhiều */
+      justify-content: center;
+      /* căn giữa ngang */
+      gap: 10px;
     }
 
     #questionBox {
@@ -110,11 +118,24 @@
     #questionText img {
       max-width: 50%;
       height: auto;
-      display: flex;
       margin: 10px auto;
       border-radius: 8px;
       box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+      height: auto;
+      margin: 5px;
+      display: inline-block;
+      /* cho nằm cạnh nhau */
+      vertical-align: middle;
+      flex: 1 1 45%;
+      /* mỗi ảnh chiếm tối đa 45% khung */
+      max-width: 45%;
+      /* giới hạn ngang */
+      border-radius: 8px;
+      /* bo góc cho đẹp */
+      object-fit: contain;
+      /* tránh méo ảnh */
     }
+
 
     #questionBox input {
       width: 100%;
@@ -307,32 +328,40 @@
     function updateRanking() {
       const counts = {};
       teams.forEach(t => counts[t] = 0);
-      for (let r = 0; r < rows; r++)
-        for (let c = 0; c < cols; c++)
+
+      // Đếm số ô mỗi đội
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
           counts[grid[r][c]]++;
-      // Sắp xếp theo tên nhóm (Team 1, Team 2, ...)
-      const sorted = teams.slice().sort((a, b) => {
-        // Extract team number from "teamX"
-        const numA = parseInt(a.replace("team", ""));
-        const numB = parseInt(b.replace("team", ""));
-        return numA - numB;
-      });
+        }
+      }
+
+      // Sắp xếp theo số ô chiếm được (giảm dần)
+      const sorted = teams.slice().sort((a, b) => counts[b] - counts[a]);
+
       // Chỉ hiển thị 6 đội: 1,2,3,5,6,7 (bỏ đội 4)
+      const filtered = sorted.filter(t => t !== "team4");
+
       let html = "<table><tr><th>Hạng</th><th>Đội</th><th>Ô</th></tr>";
-      sorted.forEach((t, i) => {
-        html += `<tr><td>${i + 1}</td><td class="${t}">Team ${t.replace("team", "")} (${teamNames[t]})</td><td>${counts[t]}</td></tr>`;
+      filtered.forEach((t, i) => {
+        html += `<tr>
+      <td>${i + 1}</td>
+      <td class="${t}">Team ${t.replace("team", "")} (${teamNames[t]})</td>
+      <td>${counts[t]}</td>
+    </tr>`;
       });
       html += "</table>";
-      // Tìm đội dẫn đầu
-      const leader = sorted.reduce((maxTeam, t) => counts[t] > counts[maxTeam] ? t : maxTeam, sorted[0]);
+
+      // Đội dẫn đầu (theo số ô nhiều nhất)
+      const leader = filtered[0];
       html += `<p style="margin-top:10px;"><b>Đội dẫn đầu: <span class="${leader}">Team ${leader.replace("team", "")} (${teamNames[leader]})</span></b></p>`;
+
       document.getElementById("ranking").innerHTML = html;
     }
+
 
     render();
   </script>
 </body>
 
 </html>
-
-
