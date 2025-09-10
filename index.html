@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Cuộc Chiến Lãnh Địa</title>
+  <style>
+    body {
+      font-family: Arial;
+      background-image: url("background.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      gap: 2px;
+      margin: 20px auto;
+      width: max-content;
+    }
+
+    .cell {
+      width: 60px;
+      height: 60px;
+      border: 1px solid #aaa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+
+    .team1 {
+      background: #e74c3c;
+      color: greenyellow;
+    }
+
+    /* đỏ */
+    .team2 {
+      background: #3498db;
+      color: pink;
+    }
+
+    /* xanh biển */
+    .team3 {
+      background: #2ecc71;
+      color: white;
+    }
+
+    /* xanh lá */
+    .team5 {
+      background: #f1c40f;
+      color: #211e1e;
+    }
+
+    /* vàng */
+    .team6 {
+      background: #9b59b6;
+      color: orange
+    }
+
+    /* tím */
+    .team7 {
+      background: #e67e22;
+      color: #66f2b1;
+    }
+
+    /* cam */
+
+    /* popup câu hỏi */
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    #questionText {
+      text-align: justify;
+    }
+
+    #questionBox {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border: 3px solid #333;
+      z-index: 2000;
+      width: 800px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+    }
+
+    #questionBox p {
+      font-size: 30px;
+      margin-bottom: 15px;
+    }
+
+    #questionText img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 10px auto;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+    }
+
+    #questionBox input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      font-size: 30px;
+    }
+
+    #questionBox button {
+      padding: 8px 15px;
+      margin-right: 5px;
+      font-size: 25px;
+      cursor: pointer;
+    }
+
+    /* ranking */
+    #ranking {
+      margin: 20px auto;
+      width: 250px;
+    }
+
+    #ranking table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #f9f9f9;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    #ranking th,
+    #ranking td {
+      padding: 8px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #ranking th {
+      background: #333;
+      color: white;
+    }
+
+    #ranking tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h2 style="text-align:center">Cuộc Chiến Lãnh Địa</h2>
+  <div id="board" class="board"></div>
+
+  <div style="text-align:center; margin-top:20px;">
+    <label>Đội chiếm ô:
+      <select id="currentTeam">
+        <option value="team1">Team 1 (Đỏ)</option>
+        <option value="team2">Team 2 (Xanh biển)</option>
+        <option value="team3">Team 3 (Xanh lá)</option>
+        <option value="team5">Team 5 (Vàng)</option>
+        <option value="team6">Team 6 (Tím)</option>
+        <option value="team7">Team 7 (Cam)</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="ranking"></div>
+
+  <!-- overlay + box câu hỏi -->
+  <div id="overlay"></div>
+  <div id="questionBox">
+    <p id="questionText"></p>
+    <input type="text" id="answerInput" placeholder="Nhập đáp án...">
+    <br>
+    <button onclick="submitAnswer()">Trả lời</button>
+    <button onclick="closeQuestion()">Đóng</button>
+  </div>
+
+  <script>
+    const rows = 5, cols = 6;
+    const teams = ["team1", "team2", "team3", "team5", "team6", "team7"];
+    const teamNames = {
+      team1: "Đỏ",
+      team2: "Xanh biển",
+      team3: "Xanh lá",
+      team5: "Vàng",
+      team6: "Tím",
+      team7: "Cam"
+    };
+
+    // danh sách câu hỏi
+    const questions = [
+      { q: "Chiến lược chiến tranh đầu tiên ở miền Nam Việt Nam mà Mỹ thực hiện giai đoạn 1954 - 1960 thường được gọi là gì?", a: ["chiến lược chiến tranh đơn phương", "chiến tranh một phía"] },
+      { q: "Vì sao gọi là chiến tranh đơn phương?", a: ["một mình mỹ gây sự", "quân cách mạng việt nam chưa chống lại, chỉ chủ trương đấu tranh chính trị đòi mỹ thi hành hiệp định Giơnevơ"] },
+      { q: 'Trong giai đoạn 1954 - 1960, Mỹ Ngụy đã ra 1 luật phản động để khủng bố những người yêu nước và cách mạng? <br>Phương trình gợi ý: [(59x - 10)^2  +7]^2 - 49=0', a: ["luật 10/59"] },
+      { q: "Tháng 8/1956, đồng chí Lê Duẩn ủy viên Bộ chính trị, Bí thư Xứ ủy Nam Bộ đã viết một đề cương xác định nhân dân miền Nam không còn con đường nào khác là đứng lên làm cách mạng để cứu nước, cứu mình. Đề cương đó tên là gì?", a: ["đề cương cách mạng miền nam"] },
+      { q: "Cân nhắc tương quan lực lượng giữa ta và địch, tháng 7/1954, Đảng đã chủ trương đưa ra quyết định thay đổi phương thức đấu tranh từ ... sang ... ? ", a: ["đấu tranh quân sự, đấu tranh chính trị"] },
+      { q: "Điền từ còn thiếu vào chỗ trống: “Chiến lược chiến tranh đơn phương được tiến hành với âm mưu tìm diệt cán bộ cách mạng và căn cứ địa của ta ở miền Nam. Tuy nhiên, âm mưu chính của cuộc chiến này là biến miền Nam Việt Nam thành ... ", a: ["thuộc địa kiểu mới"] },
+      { q: '<img src="BenThanhMarket.jpg" alt="Chợ Bến Thành.png" style="max-width:100%;"> <img src="Boeing787.png" alt="Máy bay 787 bamboo.png" style="max-width:100%;"> Hình ảnh dưới đây muốn nhắc tới sự kiện gì được dấy lên bởi Nghị quyết Trung ương 15?', a: ["khởi nghĩa đồng loạt tại bến tre", "phong trào đồng khởi"] },
+      { q: 'Cho biết hình ảnh dưới đây là của? <img src="HoChiMinhSeaTrail.png" alt="Đường Hồ Chí Minh trên biển.png" style="max-width:100%;">', a: ["đường hồ chí minh trên biển"] },
+      { q: 'Được ánh sáng Nghị quyết 15 soi đường, phong trào đấu tranh của nhân dân miền Nam vốn đã âm ỉ, dồn nén, nay bùng nổ dữ dội và ngày càng lan rộng, dâng cao bằng nhiều hình thức, diễn ra mạnh mẽ theo phương châm gì? <img src="2foot.png" alt="2 chân.png" style="max-width:100%;"> <img src="3arrows.png" alt="3 mũi.png" style="max-width:100%;">', a: "hai chân, ba mũi" },
+      { q: "Hoàn thành câu sau: Phong trào Đồng khởi có ý nghĩa lịch sử quan trọng đối với cách mạng miền Nam Việt Nam, đánh dấu sự chuyển mình của cách mạng miền Nam từ ...(1)... sang ...(2)..., từ ...(3)... sang ...(4)... ", a: "thế giữ gìn lực lượng; thế tiến công; khởi nghĩa từng phần; chiến tranh cách mạng chống chủ nghĩa thực dân mới của mỹ" },
+      { q: "Đến cuối 1957, ở Nam Bộ có bao nhiêu đơn vị cách mạng vũ trang?", a: "37" },
+      { q: "Từ thắng lợi của phong trào Đồng khởi, ngày 20/12/1960, tại xã Tân Lập (Tây Ninh), Mặt trận Dân tộc giải phóng miền Nam Việt Nam được thành lập, do Nguyễn Hữu Thọ làm Chủ Tịch. Lúc đó, ông làm nghề gì? ", a: "luật sư" }
+    ];
+    // chuẩn hóa đáp án
+    function getQuestion(idx) {
+      return questions[idx % questions.length];
+    }
+
+
+    // khởi tạo lưới
+    let grid = Array(rows).fill(null).map(() => Array(cols).fill(null));
+    let t = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        grid[r][c] = teams[t % teams.length];
+        t++;
+      }
+    }
+
+    let currentCell = null;
+
+    // hàm vẽ lại bảng
+    function render() {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const div = document.createElement("div");
+          div.className = "cell " + grid[r][c];
+          div.textContent = String.fromCharCode(65 + r) + (c + 1);
+          div.addEventListener("click", () => openQuestion(r, c));
+          board.appendChild(div);
+        }
+      }
+      updateRanking();
+    }
+    let currentIndex = 0;
+
+    function openQuestion(r, c) {
+      if (currentIndex >= questions.length) {
+        alert("Hết câu hỏi rồi!");
+        return;
+      }
+
+      currentCell = { r: r, c: c };
+      const q = questions[currentIndex]; // lấy câu theo thứ tự
+      document.getElementById("questionText").innerHTML = q.q;
+      document.getElementById("answerInput").value = "";
+      document.getElementById("overlay").style.display = "block";
+      document.getElementById("questionBox").style.display = "block";
+    }
+
+
+    // hàm đóng popup câu hỏi
+    function closeQuestion() {
+      document.getElementById("overlay").style.display = "none";
+      document.getElementById("questionBox").style.display = "none";
+    }
+    function submitAnswer() {
+      const answer = document.getElementById("answerInput").value.trim();
+      const q = questions[currentIndex];
+
+      let correct = false;
+      if (Array.isArray(q.a)) {
+        correct = q.a.some(ans => ans.toLowerCase() === answer.toLowerCase());
+      } else {
+        correct = q.a.toLowerCase() === answer.toLowerCase();
+      }
+
+      if (correct) {
+        const team = document.getElementById("currentTeam").value;
+        grid[currentCell.r][currentCell.c] = team;
+        render();
+        alert("Đúng rồi!");
+      } else {
+        alert("Sai mất rồi!");
+      }
+
+      currentIndex++; // sang câu hỏi tiếp theo
+      closeQuestion();
+    }
+
+    // cho phép nhấn Enter để submit
+    document.getElementById("answerInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") submitAnswer();
+    });
+
+    // hàm cập nhật bảng xếp hạng
+    function updateRanking() {
+      const counts = {};
+      teams.forEach(t => counts[t] = 0);
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++)
+          counts[grid[r][c]]++;
+      // Sắp xếp theo tên nhóm (Team 1, Team 2, ...)
+      const sorted = teams.slice().sort((a, b) => {
+        // Extract team number from "teamX"
+        const numA = parseInt(a.replace("team", ""));
+        const numB = parseInt(b.replace("team", ""));
+        return numA - numB;
+      });
+      // Chỉ hiển thị 6 đội: 1,2,3,5,6,7 (bỏ đội 4)
+      let html = "<table><tr><th>Hạng</th><th>Đội</th><th>Ô</th></tr>";
+      sorted.forEach((t, i) => {
+        html += `<tr><td>${i + 1}</td><td class="${t}">Team ${t.replace("team", "")} (${teamNames[t]})</td><td>${counts[t]}</td></tr>`;
+      });
+      html += "</table>";
+      // Tìm đội dẫn đầu
+      const leader = sorted.reduce((maxTeam, t) => counts[t] > counts[maxTeam] ? t : maxTeam, sorted[0]);
+      html += `<p style="margin-top:10px;"><b>Đội dẫn đầu: <span class="${leader}">Team ${leader.replace("team", "")} (${teamNames[leader]})</span></b></p>`;
+      document.getElementById("ranking").innerHTML = html;
+    }
+
+    render();
+  </script>
+</body>
+
+</html>
